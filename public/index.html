@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#6558d3">
+<title>مدرسه نگرش | پنل هوشمند مدرسه</title>
+<style>
+:root{font-family:Tahoma,"Segoe UI",sans-serif;color:#24233c;background:#f7f8fc}*{box-sizing:border-box}body{margin:0}header{background:linear-gradient(120deg,#6558d3,#8b7cf0);color:white;padding:26px max(20px,calc((100% - 1100px)/2));}header h1{margin:0 0 8px;font-size:clamp(22px,4vw,32px)}header p{margin:0;opacity:.92}.wrap{max-width:1100px;margin:24px auto;padding:0 18px}.notice{background:#fff6d9;border:1px solid #f0dfa0;border-radius:14px;padding:14px 16px;line-height:1.8;margin-bottom:20px}.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:14px}.card{background:white;border:1px solid #ececf5;border-radius:18px;padding:18px;box-shadow:0 5px 18px #26234b0a}.label{font-size:14px;color:#6b6b83}.num{font-size:27px;font-weight:700;margin-top:12px;color:#6558d3}.section{margin-top:24px}.section h2{font-size:20px}.quick{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px}.quick div{padding:14px;border-radius:12px;background:#eeeaff;color:#49409a;font-weight:700}.status{font-size:13px;margin-top:12px;color:#5e6078}.dot{display:inline-block;width:9px;height:9px;border-radius:50%;background:#b4b5c4;margin-left:7px}.dot.ok{background:#19a875}.announcements{display:grid;gap:10px}.announcement{padding:14px;background:#fff;border:1px solid #ececf5;border-radius:12px;line-height:1.8}.announcement h3{margin:0 0 4px;font-size:16px}.foot{color:#77788b;font-size:12px;margin:24px 0;text-align:center}@media(max-width:520px){header{padding:22px 18px}.wrap{margin-top:16px}.card{padding:15px}}
+</style>
+</head>
+<body>
+<header><h1>مدرسه نگرش</h1><p>سامانه همراه مدرسه؛ ساده، روشن و در دسترس</p></header>
+<main class="wrap">
+<div class="notice"><strong>نسخه آغازین:</strong> این داشبورد برای نمایش و آزمایش اولیه ساخته شده است. اطلاعات آماری نمایشی‌اند. تا پیش از فعال‌شدن ورود امن و سطح دسترسی مدیر، معلم، دانش‌آموز و والدین، اطلاعات واقعی دانش‌آموزان را وارد نکنید.</div>
+<section class="cards" aria-label="آمار مدرسه">
+<div class="card"><div class="label">دانش‌آموزان</div><div class="num" id="students">—</div><div class="status">آمار پایگاه داده</div></div>
+<div class="card"><div class="label">کلاس‌های فعال</div><div class="num">۱۸</div><div class="status">عدد نمایشی</div></div>
+<div class="card"><div class="label">حضور امروز</div><div class="num">۹۶٪</div><div class="status">عدد نمایشی</div></div>
+<div class="card"><div class="label">اطلاعیه‌ها</div><div class="num" id="announcementCount">—</div><div class="status">از پایگاه داده</div></div>
+</section>
+<section class="section"><h2>دسترسی سریع</h2><div class="quick"><div>👩‍🎓 پرونده دانش‌آموز</div><div>🗓 حضور و غیاب</div><div>📘 نمرات و پیشرفت</div><div>💳 شهریه و پرداخت</div><div>📣 اطلاعیه‌ها</div><div>🧑‍🏫 برنامه کلاس‌ها</div></div></section>
+<section class="section"><h2>آخرین اطلاعیه‌ها</h2><div id="announcements" class="announcements"><div class="announcement">در حال دریافت اطلاعیه‌ها…</div></div><div id="dbStatus" class="status"><span class="dot"></span>در حال بررسی اتصال پایگاه داده…</div></section>
+<p class="foot">مدرسه نگرش · نسخه آغازین ۰.۱ · برای استفاده واقعی، امنیت و دسترسی‌ها باید تکمیل شود.</p>
+</main>
+<script>
+async function loadDashboard(){
+  const status=document.getElementById("dbStatus");
+  try{
+    const health=await fetch("/api/health").then(r=>r.json());
+    if(!health.ok) throw new Error("database not connected");
+    status.innerHTML='<span class="dot ok"></span>اتصال پایگاه داده برقرار است';
+    const [students,announcements]=await Promise.all([
+      fetch("/api/students/count").then(r=>r.json()),
+      fetch("/api/announcements").then(r=>r.json())
+    ]);
+    document.getElementById("students").textContent=students.count;
+    document.getElementById("announcementCount").textContent=announcements.length;
+    const target=document.getElementById("announcements");
+    target.replaceChildren();
+    if(!announcements.length){target.textContent="هنوز اطلاعیه‌ای ثبت نشده است.";return;}
+    for(const item of announcements){
+      const article=document.createElement("article");article.className="announcement";
+      const title=document.createElement("h3");title.textContent=item.title;
+      const body=document.createElement("div");body.textContent=item.body;
+      article.append(title,body);target.append(article);
+    }
+  }catch(_e){
+    status.innerHTML='<span class="dot"></span>اتصال پایگاه داده هنوز تنظیم نشده است';
+    document.getElementById("students").textContent="—";
+    document.getElementById("announcementCount").textContent="—";
+    document.getElementById("announcements").textContent="پس از اتصال پایگاه داده، اطلاعیه‌ها در این قسمت نمایش داده می‌شوند.";
+  }
+}
+loadDashboard();
+</script>
+</body>
+</html>
